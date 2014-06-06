@@ -10,7 +10,7 @@ from django.views.decorators.vary import vary_on_headers
 
 from wagtail.wagtailadmin.edit_handlers import TabbedInterface, ObjectList
 from wagtail.wagtailadmin.forms import SearchForm
-from wagtail.wagtailadmin import tasks, hooks
+from wagtail.wagtailadmin import tasks, hooks, signals
 
 from wagtail.wagtailcore.models import Page, PageRevision, get_page_types
 
@@ -32,6 +32,17 @@ def index(request, parent_page_id=None):
             pages = pages.order_by(ordering)
     else:
         ordering = 'title'
+
+    # Pagination
+    if ordering != 'ord':
+        p = request.GET.get('p', 1)
+        paginator = Paginator(pages, 50)
+        try:
+            pages = paginator.page(p)
+        except PageNotAnInteger:
+            pages = paginator.page(1)
+        except EmptyPage:
+            pages = paginator.page(paginator.num_pages)
 
     return render(request, 'wagtailadmin/pages/index.html', {
         'parent_page': parent_page,
@@ -110,7 +121,8 @@ def create(request, content_type_app_name, content_type_model_name, parent_page_
     #     messages.error(request, "Sorry, you do not have access to create a page of type '%s' here." % content_type.name)
     #     return redirect('wagtailadmin_pages_select_type')
 
-    page = page_class(owner=request.user,parent=parent_page)
+    page = page_class(owner=request.user)
+    signals.init_new_page.send(sender=create,page=page,parent=parent_page)
     edit_handler_class = get_page_edit_handler(page_class)
     form_class = edit_handler_class.get_form_class(page_class)
 
