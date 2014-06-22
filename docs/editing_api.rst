@@ -371,8 +371,8 @@ Edit Handler API
 ~~~~~~~~~~~~~~~~
 
 
-Hooks
------
+Admin Hooks
+-----------
 
 On loading, Wagtail will search for any app with the file ``wagtail_hooks.py`` and execute the contents. This provides a way to register your own functions to execute at certain points in Wagtail's execution, such as when a ``Page`` object is saved or when the main menu is constructed.
 
@@ -545,6 +545,60 @@ Where ``'hook'`` is one of the following hook strings and ``function`` is a func
       + settings.STATIC_URL \
       + 'demo/css/vendor/font-awesome/css/font-awesome.min.css">')
     hooks.register('insert_editor_css', editor_css)
+
+.. _construct_whitelister_element_rules:
+
+``construct_whitelister_element_rules``
+  .. versionadded:: 0.4
+  Customise the rules that define which HTML elements are allowed in rich text areas. By default only a limited set of HTML elements and attributes are whitelisted - all others are stripped out. The callables passed into this hook must return a dict, which maps element names to handler functions that will perform some kind of manipulation of the element. These handler functions receive the element as a `BeautifulSoup <http://www.crummy.com/software/BeautifulSoup/bs4/doc/>`_ Tag object.
+
+  The ``wagtail.wagtailcore.whitelist`` module provides a few helper functions to assist in defining these handlers: ``allow_without_attributes``, a handler which preserves the element but strips out all of its attributes, and ``attribute_rule`` which accepts a dict specifying how to handle each attribute, and returns a handler function. This dict will map attribute names to either True (indicating that the attribute should be kept), False (indicating that it should be dropped), or a callable (which takes the initial attribute value and returns either a final value for the attribute, or None to drop the attribute).
+
+  For example, the following hook function will add the ``<blockquote>`` element to the whitelist, and allow the ``target`` attribute on ``<a>`` elements:
+
+  .. code-block:: python
+
+    from wagtail.wagtailadmin import hooks
+    from wagtail.wagtailcore.whitelist import attribute_rule, check_url, allow_without_attributes
+
+    def whitelister_element_rules():
+        return {
+            'blockquote': allow_without_attributes,
+            'a': attribute_rule({'href': check_url, 'target': True}),
+        }
+    hooks.register('construct_whitelister_element_rules', whitelister_element_rules)
+
+
+Image Formats in the Rich Text Editor
+-------------------------------------
+
+On loading, Wagtail will search for any app with the file ``image_formats.py`` and execute the contents. This provides a way to customize the formatting options shown to the editor when inserting images in the ``RichTextField`` editor.
+
+As an example, add a "thumbnail" format:
+
+.. code-block:: python
+  # image_formats.py
+  from wagtail.wagtailimages.formats import Format, register_image_format
+
+  register_image_format(Format('thumbnail', 'Thumbnail', 'richtext-image thumbnail', 'max-120x120'))
+
+
+To begin, import the the ``Format`` class, ``register_image_format`` function, and optionally ``unregister_image_format`` function. To register a new ``Format``, call the ``register_image_format`` with the ``Format`` object as the argument. The ``Format`` takes the following init arguments:
+
+``name``
+  The unique key used to identify the format. To unregister this format, call ``unregister_image_format`` with this string as the only argument.
+
+``label``
+  The label used in the chooser form when inserting the image into the ``RichTextField``.
+
+``classnames``
+  The string to assign to the ``class`` attribute of the generated ``<img>`` tag.
+
+``filter_spec``
+  The string specification to create the image rendition. For more, see the :ref:`image_tag`.
+
+
+To unregister, call ``unregister_image_format`` with the string of the ``name`` of the ``Format`` as the only argument.
 
 
 Content Index Pages (CRUD)
