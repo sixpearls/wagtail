@@ -1,17 +1,14 @@
+from six import StringIO
+
 from django.test import TestCase
 from django.test.utils import override_settings
 from django.conf import settings
 from django.core import management
+
 from wagtail.tests.utils import unittest
 from wagtail.wagtailsearch import models, get_search_backend
 from wagtail.wagtailsearch.backends.db import DBSearch
 from wagtail.wagtailsearch.backends import InvalidSearchBackendError
-from StringIO import StringIO
-
-
-# Register wagtailsearch signal handlers
-from wagtail.wagtailsearch import register_signal_handlers
-register_signal_handlers()
 
 
 class BackendTests(object):
@@ -19,7 +16,7 @@ class BackendTests(object):
 
     def setUp(self):
         # Search WAGTAILSEARCH_BACKENDS for an entry that uses the given backend path
-        for (backend_name, backend_conf) in settings.WAGTAILSEARCH_BACKENDS.iteritems():
+        for backend_name, backend_conf in settings.WAGTAILSEARCH_BACKENDS.items():
             if backend_conf['BACKEND'] == self.backend_path:
                 self.backend = get_search_backend(backend_name)
                 break
@@ -39,21 +36,25 @@ class BackendTests(object):
         testa = models.SearchTest()
         testa.title = "Hello World"
         testa.save()
+        self.backend.add(testa)
         self.testa = testa
 
         testb = models.SearchTest()
         testb.title = "Hello"
         testb.live = True
         testb.save()
+        self.backend.add(testb)
 
         testc = models.SearchTestChild()
         testc.title = "Hello"
         testc.live = True
         testc.save()
+        self.backend.add(testc)
 
         testd = models.SearchTestChild()
         testd.title = "World"
         testd.save()
+        self.backend.add(testd)
 
         # Refresh the index
         self.backend.refresh_index()
@@ -128,6 +129,7 @@ class BackendTests(object):
 
     def test_delete(self):
         # Delete one of the objects
+        self.backend.delete(self.testa)
         self.testa.delete()
 
         # Refresh index

@@ -1,7 +1,5 @@
-from django.test import TestCase
 from django.contrib.auth.models import User
-from django.utils.six.moves.urllib.parse import urlparse, ParseResult
-from django.http import QueryDict
+from django.utils import six
 
 # We need to make sure that we're using the same unittest library that Django uses internally
 # Otherwise, we get issues with the "SkipTest" and "ExpectedFailure" exceptions being recognised as errors
@@ -24,3 +22,6 @@ class WagtailTestUtils(object):
         self.client.login(username='test', password='password')
 
         return user
+
+    def assertRegex(self, *args, **kwargs):
+        six.assertRegex(self, *args, **kwargs)
