@@ -1,18 +1,20 @@
 from __future__ import unicode_literals
 
-from django import template
-from django.core import urlresolvers
-from django.utils.translation import ugettext_lazy as _
+import re
 
-from wagtail.wagtailadmin.menu import MenuItem
+from django.conf import settings
+from django import template
+from django.contrib.humanize.templatetags.humanize import intcomma
 
 from wagtail.wagtailcore import hooks
 from wagtail.wagtailcore.models import get_navigation_menu_items, UserPagePermissionsProxy, PageViewRestriction
 from wagtail.wagtailcore.utils import camelcase_to_underscore
+from wagtail.wagtailadmin.menu import admin_menu
 
 
 register = template.Library()
 
+register.filter('intcomma', intcomma)
 
 @register.inclusion_tag('wagtailadmin/shared/explorer_nav.html')
 def explorer_nav():
@@ -21,7 +23,7 @@ def explorer_nav():
     }
 
 
-@register.inclusion_tag('wagtailadmin/shared/explorer_nav.html')
+@register.inclusion_tag('wagtailadmin/shared/explorer_nav_child.html')
 def explorer_subnav(nodes):
     return {
         'nodes': nodes
@@ -30,20 +32,16 @@ def explorer_subnav(nodes):
 
 @register.inclusion_tag('wagtailadmin/shared/main_nav.html', takes_context=True)
 def main_nav(context):
-    menu_items = [
-        MenuItem(_('Explorer'), '#', classnames='icon icon-folder-open-inverse dl-trigger', order=100),
-        MenuItem(_('Search'), urlresolvers.reverse('wagtailadmin_pages_search'), classnames='icon icon-search', order=200),
-    ]
-
     request = context['request']
 
-    for fn in hooks.get_hooks('construct_main_menu'):
-        fn(request, menu_items)
-
     return {
-        'menu_items': sorted(menu_items, key=lambda i: i.order),
+        'menu_html': admin_menu.render_html(request),
         'request': request,
     }
+
+@register.simple_tag
+def main_nav_js():
+    return admin_menu.media['js']
 
 
 @register.filter("ellipsistrim")
@@ -121,3 +119,30 @@ def hook_output(hook_name):
     """
     snippets = [fn() for fn in hooks.get_hooks(hook_name)]
     return ''.join(snippets)
+
+
+@register.assignment_tag
+def usage_count_enabled():
+    return getattr(settings, 'WAGTAIL_USAGE_COUNT_ENABLED', False)
+
+
+class EscapeScriptNode(template.Node):
+    TAG_NAME = 'escapescript'
+    SCRIPT_RE = re.compile(r'<(-*)/script>')
+
+    def __init__(self, nodelist):
+        super(EscapeScriptNode, self).__init__()
+        self.nodelist = nodelist
+
+    def render(self, context):
+        out = self.nodelist.render(context)
+        escaped_out = self.SCRIPT_RE.sub(r'<-\1/script>', out)
+        return escaped_out
+
+    @classmethod
+    def handle(cls, parser, token):
+        nodelist = parser.parse(('end' + EscapeScriptNode.TAG_NAME,))
+        parser.delete_first_token()
+        return cls(nodelist)
+
+register.tag(EscapeScriptNode.TAG_NAME, EscapeScriptNode.handle)

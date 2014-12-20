@@ -6,10 +6,12 @@ from django.contrib.auth.decorators import permission_required
 
 from wagtail.wagtailadmin.modal_workflow import render_modal_workflow
 from wagtail.wagtailadmin.forms import SearchForm
+from wagtail.wagtailsearch.backends import get_search_backends
 
 from wagtail.wagtailimages.models import get_image_model
 from wagtail.wagtailimages.forms import get_image_form, ImageInsertionForm
 from wagtail.wagtailimages.formats import get_image_format
+from wagtail.wagtailimages.fields import MAX_UPLOAD_SIZE
 
 
 def get_image_json(image):
@@ -121,6 +123,11 @@ def chooser_upload(request):
 
         if form.is_valid():
             form.save()
+
+            # Reindex the image to make sure all tags are indexed
+            for backend in get_search_backends():
+                backend.add(image)
+
             if request.GET.get('select_format'):
                 form = ImageInsertionForm(initial={'alt_text': image.default_alt_text})
                 return render_modal_workflow(
@@ -140,7 +147,7 @@ def chooser_upload(request):
 
     return render_modal_workflow(
         request, 'wagtailimages/chooser/chooser.html', 'wagtailimages/chooser/chooser.js',
-        {'images': images, 'uploadform': form, 'searchform': searchform}
+        {'images': images, 'uploadform': form, 'searchform': searchform, 'max_filesize': MAX_UPLOAD_SIZE}
     )
 
 

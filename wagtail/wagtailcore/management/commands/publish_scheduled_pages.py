@@ -5,6 +5,7 @@ from optparse import make_option
 
 from django.core.management.base import BaseCommand
 from django.utils import dateparse, timezone
+
 from wagtail.wagtailcore.models import Page, PageRevision
 
 
@@ -54,7 +55,11 @@ class Command(BaseCommand):
             else:
                 print("No expired pages to be deactivated found.")
         else:
-            expired_pages.update(expired=True, live=False)
+            # Unpublish the expired pages
+            # Cast to list to make sure the query is fully evaluated
+            # before unpublishing anything
+            for page in list(expired_pages):
+                page.unpublish(set_expired=True)
 
         # 2. get all page revisions for moderation that have been expired
         expired_revs = [

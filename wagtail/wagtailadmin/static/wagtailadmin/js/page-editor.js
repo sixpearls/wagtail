@@ -59,6 +59,7 @@ function insertRichTextDeleteControl(elem) {
 function initDateChooser(id) {
     if (window.dateTimePickerTranslations) {
         $('#' + id).datetimepicker({
+            closeOnDateSelect: true,
             timepicker: false,
             scrollInput:false,
             format: 'Y-m-d',
@@ -79,6 +80,7 @@ function initDateChooser(id) {
 function initTimeChooser(id) {
     if (window.dateTimePickerTranslations) {
         $('#' + id).datetimepicker({
+            closeOnDateSelect: true,
             datepicker: false,
             scrollInput:false,
             format: 'H:i',
@@ -98,7 +100,8 @@ function initTimeChooser(id) {
 function initDateTimeChooser(id) {
     if (window.dateTimePickerTranslations) {
         $('#' + id).datetimepicker({
-            format: 'Y-m-d H:i',
+            closeOnDateSelect: true,
+            format: 'Y-m-d H:i:s',
             scrollInput:false,
             i18n: {
                 lang: window.dateTimePickerTranslations
@@ -106,8 +109,8 @@ function initDateTimeChooser(id) {
             language: 'lang'
         });
     } else {
-    $('#' + id).datetimepicker({
-            format: 'Y-m-d H:i',
+        $('#' + id).datetimepicker({
+            format: 'Y-m-d H:i:s',
         });
     }
 }
@@ -122,7 +125,7 @@ function InlinePanel(opts) {
     var self = {};
 
     self.setHasContent = function(){
-        if($('li:visible', self.formsUl).length){
+        if($('> li', self.formsUl).not(".deleted").length){
             self.formsUl.parent().removeClass('empty');
         }else{
             self.formsUl.parent().addClass('empty');
@@ -139,7 +142,7 @@ function InlinePanel(opts) {
         $('#' + deleteInputId + '-button').click(function() {
             /* set 'deleted' form field to true */
             $('#' + deleteInputId).val('1');
-            $('#' + childId).slideUp(function() {
+            $('#' + childId).addClass('deleted').slideUp(function() {
                 self.updateMoveButtonDisabledStates();
                 self.setHasContent();
             });
@@ -191,8 +194,8 @@ function InlinePanel(opts) {
         /* Hide container on page load if it is marked as deleted. Remove the error
          message so that it doesn't count towards the number of errors on the tab at the
          top of the page. */
-        if ( $('#' + deleteInputId).val() === "1" ) {
-            $('#' + childId).hide(0, function() {
+        if ($('#' + deleteInputId).val() === "1" ) {
+            $('#' + childId).addClass('deleted').hide(0, function() {
                 self.updateMoveButtonDisabledStates();
                 self.setHasContent();
             });
@@ -242,19 +245,17 @@ function InlinePanel(opts) {
 
     buildExpandingFormset(opts.formsetPrefix, {
         onAdd: function(formCount) {
-            function fixPrefix(str) {
-                return str.replace(/__prefix__/g, formCount);
-            }
-            self.initChildControls(fixPrefix(opts.emptyChildFormPrefix));
+            var newChildPrefix = opts.emptyChildFormPrefix.replace(/__prefix__/g, formCount);
+            self.initChildControls(newChildPrefix);
             if (opts.canOrder) {
                 /* NB form hidden inputs use 0-based index and only increment formCount *after* this function is run.
                 Therefore formcount and order are currently equal and order must be incremented
                 to ensure it's *greater* than previous item */
-                $(fixPrefix('#id_' + opts.emptyChildFormPrefix + '-ORDER')).val(formCount + 1);
+                $('#id_' + newChildPrefix + '-ORDER').val(formCount + 1);
             }
             self.updateMoveButtonDisabledStates();
 
-            opts.onAdd(fixPrefix);
+            if (opts.onAdd) opts.onAdd();
         }
     });
 

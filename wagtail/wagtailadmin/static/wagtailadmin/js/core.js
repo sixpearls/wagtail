@@ -12,20 +12,12 @@ $(function(){
     $('body').addClass('ready');
 
     // Enable toggle to open/close nav
-    $('#nav-toggle').click(function(){
+    $(document).on('click', '#nav-toggle', function(){
         $('body').toggleClass('nav-open');
         if(!$('body').hasClass('nav-open')){
             $('body').addClass('nav-closed');
         }else{
             $('body').removeClass('nav-closed');
-        }
-    });
-
-    // Enable swishy section navigation menu
-    $('.explorer').addClass('dl-menuwrapper').dlmenu({
-        animationClasses : {
-            classin : 'dl-animate-in-2',
-            classout : 'dl-animate-out-2'
         }
     });
 
@@ -35,9 +27,6 @@ $(function(){
         $('.nav-main').each(function(){
             var thisHeight = $(this).height();
             var footerHeight = $('.footer', $(this)).height();
-
-            // $(this).css({'height':thisHeight - footerHeight, 'overflow-y':'scroll'});
-            // $('> ul', $(this)).height(thisHeight)
         });
     };
     fitNav();
@@ -86,20 +75,11 @@ $(function(){
         }
     });
 
-    /* Bulk-selection */
-    $(document).on('click', 'thead .bulk', function(){
-        $(this).closest('table').find('tbody .bulk input').each(function(){
-            $(this).prop('checked', !$(this).prop('checked'));
-        });
-    });
-
-    $('#menu-search input').bind('focus', function(){
-        $('#menu-search').addClass('focussed');
-    }).bind('blur', function(){
-        $('#menu-search').removeClass('focussed');
-    });
-    $('#menu-search').bind('focus click', function(){
-        $(this).addClass('focussed');
+    /* Dropzones */
+    $('.drop-zone').on('dragover', function(){
+        $(this).addClass('hovered');
+    }).on('dragleave dragend drop', function(){
+        $(this).removeClass('hovered');
     });
 
     /* Header search behaviour */

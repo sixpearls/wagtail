@@ -1,7 +1,8 @@
 from __future__ import absolute_import
 
-from .base import BaseImageBackend
 import PIL.Image
+
+from wagtail.wagtailimages.backends.base import BaseImageBackend
 
 
 class PillowBackend(BaseImageBackend):
@@ -15,24 +16,20 @@ class PillowBackend(BaseImageBackend):
     def save_image(self, image, output, format):
         image.save(output, format, quality=self.quality)
 
+    def _to_rgb(self, image):
+        if image.mode not in ['RGB', 'RGBA']:
+            if 'transparency' in image.info and isinstance(image.info['transparency'], bytes):
+                image = image.convert('RGBA')
+            else:
+                image = image.convert('RGB')
+        return image
+
     def resize(self, image, size):
-        if image.mode in ['1', 'P']:
-            image = image.convert('RGB')
-        return image.resize(size, PIL.Image.ANTIALIAS)
+        return self._to_rgb(image).resize(size, PIL.Image.ANTIALIAS)
 
-    def crop_to_centre(self, image, size):
-        (original_width, original_height) = image.size
-        (target_width, target_height) = size
+    def crop(self, image, rect):
+        return image.crop(rect)
 
-        # final dimensions should not exceed original dimensions
-        final_width = min(original_width, target_width)
-        final_height = min(original_height, target_height)
-
-        if final_width == original_width and final_height == original_height:
-            return image
-
-        left = (original_width - final_width) / 2
-        top = (original_height - final_height) / 2
-        return image.crop(
-            (left, top, left + final_width, top + final_height)
-        )
+    def image_data_as_rgb(self, image):
+        image = self._to_rgb(image)
+        return image.mode, image.tostring()

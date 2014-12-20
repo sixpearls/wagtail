@@ -15,14 +15,15 @@ from django.test import TestCase
 
 from wagtail.tests.utils import WagtailTestUtils, unittest
 
-from wagtail.wagtailembeds import get_embed
 from wagtail.wagtailembeds.embeds import (
     EmbedNotFoundException,
     EmbedlyException,
     AccessDeniedEmbedlyException,
+    get_embed,
+    embedly as wagtail_embedly,
+    oembed as wagtail_oembed,
 )
-from wagtail.wagtailembeds.embeds import embedly as wagtail_embedly, oembed as wagtail_oembed
-from wagtail.wagtailembeds.templatetags.wagtailembeds_tags import embed as embed_filter, embedly as embedly_filter
+from wagtail.wagtailembeds.templatetags.wagtailembeds_tags import embed as embed_filter
 
 
 class TestEmbeds(TestCase):
@@ -213,7 +214,7 @@ class TestOembed(TestCase):
     def setUp(self):
         class DummyResponse(object):
             def read(self):
-                return "foo"
+                return b"foo"
         self.dummy_response = DummyResponse()
 
     def test_oembed_invalid_provider(self):
@@ -268,7 +269,7 @@ class TestEmbedFilter(TestCase):
     def setUp(self):
         class DummyResponse(object):
             def read(self):
-                return "foo"
+                return b"foo"
         self.dummy_response = DummyResponse()
 
     @patch('six.moves.urllib.request.urlopen')

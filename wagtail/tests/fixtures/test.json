@@ -81,7 +81,8 @@
         "audience": "public",
         "location": "The North Pole",
         "body": "<p>Chestnuts roasting on an open fire</p>",
-        "cost": "Free"
+        "cost": "Free",
+        "feed_image": 1
     }
 },
 
@@ -90,8 +91,8 @@
     "model": "tests.eventpagespeaker",
     "fields": {
         "page": 4,
-        "first_name": "Santa",
-        "last_name": "Claus",
+        "first_name": "Father",
+        "last_name": "Christmas",
         "sort_order": 0
     }
 },
@@ -223,7 +224,7 @@
         "date_from": "2015-04-22",
         "audience": "public",
         "location": "Ameristralia",
-        "body": "<p>come celebrate the independence of Ameristralia</p>",
+        "body": "<p>come celebrate the independence of Ameristralia <embed embedtype=\"image\" format=\"fullwidth\" id=\"1\" alt=\"where did my image go?\" /></p>",
         "cost": "Free"
     }
 },
@@ -251,6 +252,20 @@
         "field_type": "multiline",
         "required": true,
         "choices": "",
+        "default_value": "",
+        "help_text": "",
+        "page": 8
+    }
+},
+{
+    "pk": 3,
+    "model": "tests.formfield",
+    "fields": {
+        "sort_order": 3,
+        "label": "Your choices",
+        "field_type": "checkboxes",
+        "required": false,
+        "choices": "foo,bar,baz",
         "default_value": "",
         "help_text": "",
         "page": 8
@@ -435,10 +450,18 @@
         "permission_type": "edit"
     }
 },
-
+{
+    "pk": 6,
+    "model": "wagtailcore.grouppagepermission",
+    "fields": {
+        "group": ["Event moderators"],
+        "page": 3,
+        "permission_type": "lock"
+    }
+},
 {
     "pk": 1,
-    "model": "auth.user",
+    "model": "tests.customuser",
     "fields": {
         "username": "superuser",
         "first_name": "",
@@ -455,7 +478,7 @@
 },
 {
     "pk": 2,
-    "model": "auth.user",
+    "model": "tests.customuser",
     "fields": {
         "username": "eventeditor",
         "first_name": "",
@@ -473,7 +496,7 @@
 },
 {
     "pk": 3,
-    "model": "auth.user",
+    "model": "tests.customuser",
     "fields": {
         "username": "eventmoderator",
         "first_name": "",
@@ -491,7 +514,7 @@
 },
 {
     "pk": 4,
-    "model": "auth.user",
+    "model": "tests.customuser",
     "fields": {
         "username": "inactiveuser",
         "first_name": "",
@@ -509,7 +532,7 @@
 },
 {
     "pk": 5,
-    "model": "auth.user",
+    "model": "tests.customuser",
     "fields": {
         "username": "siteeditor",
         "first_name": "",
@@ -527,7 +550,7 @@
 },
 {
     "pk": 6,
-    "model": "auth.user",
+    "model": "tests.customuser",
     "fields": {
         "username": "admin_only_user",
         "first_name": "",
@@ -564,6 +587,24 @@
 },
 {
     "pk": 1,
+    "model": "tests.AdvertPlacement",
+    "fields": {
+        "page": 2,
+        "advert": 1,
+        "colour": "yellow"
+        }
+},
+{
+    "pk": 2,
+    "model": "tests.AdvertPlacement",
+    "fields": {
+        "page": 4,
+        "advert": 1,
+        "colour": "greener than a Christmas tree"
+        }
+},
+{
+    "pk": 1,
     "model": "tests.advert",
     "fields": {
         "text": "test_advert",
@@ -580,21 +621,21 @@
 },
 {
     "pk": 1,
-    "model": "wagtailimages.Image",
-    "fields": {
-        "title": "test image",
-        "created_at": "2014-01-01T12:00:00.000Z",
-        "width": 0,
-        "height": 0
-    }
-},
-
-{
-    "pk": 1,
     "model": "wagtailcore.pageviewrestriction",
     "fields": {
         "page": 11,
         "password": "swordfish"
+    }
+},
+{
+    "pk": 1,
+    "model": "wagtailimages.image",
+    "fields": {
+        "title": "A missing image",
+        "file": "original_images/missing.jpg",
+        "width": 1000,
+        "height": 1000,
+        "created_at": "2014-01-01T12:00:00.000Z"
     }
 }
 ]

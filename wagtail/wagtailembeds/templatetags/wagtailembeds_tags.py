@@ -3,7 +3,7 @@ import warnings
 from django import template
 from django.utils.safestring import mark_safe
 
-from wagtail.wagtailembeds import get_embed
+from wagtail.wagtailembeds.embeds import get_embed
 
 
 register = template.Library()
@@ -19,12 +19,3 @@ def embed(url, max_width=None):
             return ''
     except:
         return ''
-
-
-@register.filter
-def embedly(url, max_width=None):
-    warnings.warn(
-        "The 'embedly' filter has been renamed. "
-        "Use 'embed' instead.", DeprecationWarning)
-
-    return embed(url, max_width)
