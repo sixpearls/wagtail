@@ -1,6 +1,5 @@
 import os
 
-import django
 from django.conf import global_settings
 
 
@@ -12,13 +11,11 @@ MEDIA_URL = '/media/'
 
 DATABASES = {
     'default': {
-        'ENGINE': os.environ.get('DATABASE_ENGINE', 'django.db.backends.postgresql_psycopg2'),
-        'NAME': os.environ.get('DATABASE_NAME', 'wagtaildemo'),
-        'TEST_NAME': os.environ.get('DATABASE_NAME', 'test_wagtaildemo'),
-        'USER': os.environ.get('DATABASE_USER', 'postgres'),
-        'PASSWORD': os.environ.get('DATABASE_PASS', None),
+        'ENGINE': os.environ.get('DATABASE_ENGINE', 'django.db.backends.sqlite3'),
+        'NAME': os.environ.get('DATABASE_NAME', 'wagtail'),
     }
 }
+
 
 SECRET_KEY = 'not needed'
 
@@ -51,7 +48,7 @@ MIDDLEWARE_CLASSES = (
     'wagtail.wagtailredirects.middleware.RedirectMiddleware',
 )
 
-INSTALLED_APPS = [
+INSTALLED_APPS = (
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.auth',
@@ -77,27 +74,14 @@ INSTALLED_APPS = [
     'wagtail.contrib.wagtailroutablepage',
     'wagtail.contrib.wagtailfrontendcache',
     'wagtail.tests',
-]
 
-# If we are using Django 1.6, add South to INSTALLED_APPS
-if django.VERSION < (1, 7):
-    INSTALLED_APPS.append('south')
+    # Install wagtailredirects with its appconfig
+    # Theres nothing special about wagtailredirects, we just need to have one
+    # app which uses AppConfigs to test that hooks load properly
+    'wagtail.wagtailredirects.apps.WagtailRedirectsAppConfig',
+)
 
 
-# If we are using Django 1.7 install wagtailredirects with its appconfig
-# Theres nothing special about wagtailredirects, we just need to have one
-# app which uses AppConfigs to test that hooks load properly
-
-if django.VERSION < (1, 7):
-    INSTALLED_APPS.append('wagtail.wagtailredirects')
-else:
-    INSTALLED_APPS.append('wagtail.wagtailredirects.apps.WagtailRedirectsAppConfig')
-
-# As we don't have south migrations for tests, South thinks
-# the Django 1.7 migrations are South migrations.
-SOUTH_MIGRATION_MODULES = {
-    'tests': 'ignore',
-}
 
 
 # Using DatabaseCache to make sure that the cache is cleared between tests.
@@ -115,9 +99,6 @@ PASSWORD_HASHERS = (
 )
 
 COMPRESS_ENABLED = False  # disable compression so that we can run tests on the content of the compress tag
-
-LOGIN_REDIRECT_URL = 'wagtailadmin_home'
-LOGIN_URL = 'wagtailadmin_login'
 
 
 WAGTAILSEARCH_BACKENDS = {
@@ -138,6 +119,10 @@ try:
         'TIMEOUT': 10,
         'max_retries': 1,
     }
+
+    if 'ELASTICSEARCH_URL' in os.environ:
+        WAGTAILSEARCH_BACKENDS['elasticsearch']['URLS'] = [os.environ['ELASTICSEARCH_URL']]
+
 except ImportError:
     pass
 

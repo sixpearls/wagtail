@@ -1,20 +1,9 @@
 from contextlib import contextmanager
 import warnings
-import threading
+import sys
 
 from django.contrib.auth import get_user_model
 from django.utils import six
-
-# We need to make sure that we're using the same unittest library that Django uses internally
-# Otherwise, we get issues with the "SkipTest" and "ExpectedFailure" exceptions being recognised as errors
-try:
-    # Firstly, try to import unittest from Django
-    from django.utils import unittest
-except ImportError:
-    # Django doesn't include unittest
-    # We must be running on Django 1.7+ which doesn't support Python 2.6 so
-    # the standard unittest library should be unittest2
-    import unittest
 
 
 class WagtailTestUtils(object):
@@ -36,38 +25,22 @@ class WagtailTestUtils(object):
         with warnings.catch_warnings(record=True) as warning_list:  # catch all warnings
             yield
 
-        # rethrow all warnings that were not DeprecationWarnings
+        # rethrow all warnings that were not DeprecationWarnings or PendingDeprecationWarnings
         for w in warning_list:
-            if not issubclass(w.category, DeprecationWarning):
+            if not issubclass(w.category, (DeprecationWarning, PendingDeprecationWarning)):
                 warnings.showwarning(message=w.message, category=w.category, filename=w.filename, lineno=w.lineno, file=w.file, line=w.line)
 
+    # borrowed from https://github.com/django/django/commit/9f427617e4559012e1c2fd8fce46cbe225d8515d
+    @staticmethod
+    def reset_warning_registry():
+        """
+        Clear warning registry for all modules. This is required in some tests
+        because of a bug in Python that prevents warnings.simplefilter("always")
+        from always making warnings appear: http://bugs.python.org/issue4180
 
-# from http://www.caktusgroup.com/blog/2009/05/26/testing-django-views-for-concurrency-issues/
-def test_concurrently(times):
-    """
-    Add this decorator to small pieces of code that you want to test
-    concurrently to make sure they don't raise exceptions when run at the
-    same time.  E.g., some Django views that do a SELECT and then a subsequent
-    INSERT might fail when the INSERT assumes that the data has not changed
-    since the SELECT.
-    """
-    def test_concurrently_decorator(test_func):
-        def wrapper(*args, **kwargs):
-            exceptions = []
-            def call_test_func():
-                try:
-                    test_func(*args, **kwargs)
-                except Exception as e:
-                    exceptions.append(e)
-                    raise
-            threads = []
-            for i in range(times):
-                threads.append(threading.Thread(target=call_test_func))
-            for t in threads:
-                t.start()
-            for t in threads:
-                t.join()
-            if exceptions:
-                raise Exception('test_concurrently intercepted %s exceptions: %s' % (len(exceptions), exceptions))
-        return wrapper
-    return test_concurrently_decorator
+        The bug was fixed in Python 3.4.2.
+        """
+        key = "__warningregistry__"
+        for mod in list(sys.modules.values()):
+            if hasattr(mod, key):
+                getattr(mod, key).clear()

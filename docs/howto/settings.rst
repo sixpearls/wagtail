@@ -63,11 +63,9 @@ Apps (settings.py)
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
-    'south',
     'compressor',
     'taggit',
     'modelcluster',
-    'django.contrib.admin',
 
     'wagtail.wagtailcore',
     'wagtail.wagtailadmin',
@@ -89,11 +87,6 @@ Wagtail requires several Django app modules, third-party apps, and defines sever
 Third-Party Apps
 ----------------
 
-``south``
-  Used for database migrations. See `South Documentation`_.
-
-.. _South Documentation: http://south.readthedocs.org/en/latest/
-
 ``compressor``
   Static asset combiner and minifier for Django. Compressor also enables for the use of preprocessors. See `Compressor Documentation`_.
 
@@ -108,9 +101,6 @@ Third-Party Apps
   Extension of Django ForeignKey relation functionality, which is used in Wagtail pages for on-the-fly related object creation. For more information, see :ref:`inline_panels` or `the django-modelcluster github project page`_.
 
 .. _the django-modelcluster github project page: https://github.com/torchbox/django-modelcluster
-
-``django.contrib.admin``
-  The Django admin module. While Wagtail will eventually provide a sites-editing interface, the Django admin is included for now to provide that functionality.
 
 
 Wagtail Apps
@@ -149,19 +139,6 @@ Wagtail Apps
 
 Settings Variables (settings.py)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Authentication
---------------
-
-.. code-block:: python
-
-  LOGIN_URL = 'wagtailadmin_login'
-  LOGIN_REDIRECT_URL = 'wagtailadmin_home'
-
-These settings variables set the Django authentication system to redirect to the Wagtail admin login. If you plan to use the Django authentication module to log in non-privileged users, you should set these variables to your own login views. See `Django User Authentication`_.
-
-.. _Django User Authentication: https://docs.djangoproject.com/en/dev/topics/auth/
-
 
 Site Name
 ---------
@@ -283,13 +260,13 @@ URL Patterns
   from wagtail.wagtailcore import urls as wagtail_urls
   from wagtail.wagtailadmin import urls as wagtailadmin_urls
   from wagtail.wagtaildocs import urls as wagtaildocs_urls
-  from wagtail.wagtailsearch.urls import frontend as wagtailsearch_frontend_urls
+  from wagtail.wagtailsearch import urls as wagtailsearch_urls
 
   urlpatterns = patterns('',
     url(r'^django-admin/', include(admin.site.urls)),
 
     url(r'^admin/', include(wagtailadmin_urls)),
-    url(r'^search/', include(wagtailsearch_frontend_urls)),
+    url(r'^search/', include(wagtailsearch_urls)),
     url(r'^documents/', include(wagtaildocs_urls)),
 
     # Optional urlconf for including your own vanilla Django urls/views
@@ -451,11 +428,9 @@ settings.py
       'django.contrib.messages',
       'django.contrib.staticfiles',
 
-      'south',
       'compressor',
       'taggit',
       'modelcluster',
-      'django.contrib.admin',
 
       'wagtail.wagtailcore',
       'wagtail.wagtailadmin',
@@ -479,10 +454,6 @@ settings.py
   COMPRESS_PRECOMPILERS = (
       ('text/x-scss', 'django_libsass.SassCompiler'),
   )
-
-  # Auth settings
-  LOGIN_URL = 'wagtailadmin_login'
-  LOGIN_REDIRECT_URL = 'wagtailadmin_home'
 
   # A sample logging configuration. The only tangible logging
   # performed by this configuration is to send an email to
@@ -555,14 +526,14 @@ urls.py
   from wagtail.wagtailcore import urls as wagtail_urls
   from wagtail.wagtailadmin import urls as wagtailadmin_urls
   from wagtail.wagtaildocs import urls as wagtaildocs_urls
-  from wagtail.wagtailsearch.urls import frontend as wagtailsearch_frontend_urls
+  from wagtail.wagtailsearch import urls as wagtailsearch__urls
 
 
   urlpatterns = patterns('',
       url(r'^django-admin/', include(admin.site.urls)),
 
       url(r'^admin/', include(wagtailadmin_urls)),
-      url(r'^search/', include(wagtailsearch_frontend_urls)),
+      url(r'^search/', include(wagtailsearch_urls)),
       url(r'^documents/', include(wagtaildocs_urls)),
 
       # For anything not caught by a more specific rule above, hand over to

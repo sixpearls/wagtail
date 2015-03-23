@@ -1,14 +1,12 @@
 from __future__ import unicode_literals
 
-import re
-
 from django.conf import settings
 from django import template
 from django.contrib.humanize.templatetags.humanize import intcomma
 
 from wagtail.wagtailcore import hooks
 from wagtail.wagtailcore.models import get_navigation_menu_items, UserPagePermissionsProxy, PageViewRestriction
-from wagtail.wagtailcore.utils import camelcase_to_underscore
+from wagtail.wagtailcore.utils import camelcase_to_underscore, escape_script
 from wagtail.wagtailadmin.menu import admin_menu
 
 
@@ -63,6 +61,18 @@ def fieldtype(bound_field):
             return camelcase_to_underscore(bound_field.__class__.__name__)
         except AttributeError:
             return ""
+
+
+@register.filter
+def widgettype(bound_field):
+    try:
+        return camelcase_to_underscore(bound_field.field.widget.__class__.__name__)
+    except AttributeError:
+        try:
+            return camelcase_to_underscore(bound_field.widget.__class__.__name__)
+        except AttributeError: 
+            return ""
+
 
 
 @register.filter
@@ -126,9 +136,13 @@ def usage_count_enabled():
     return getattr(settings, 'WAGTAIL_USAGE_COUNT_ENABLED', False)
 
 
+@register.assignment_tag
+def base_url_setting():
+    return getattr(settings, 'BASE_URL', None)
+
+
 class EscapeScriptNode(template.Node):
     TAG_NAME = 'escapescript'
-    SCRIPT_RE = re.compile(r'<(-*)/script>')
 
     def __init__(self, nodelist):
         super(EscapeScriptNode, self).__init__()
@@ -136,8 +150,7 @@ class EscapeScriptNode(template.Node):
 
     def render(self, context):
         out = self.nodelist.render(context)
-        escaped_out = self.SCRIPT_RE.sub(r'<-\1/script>', out)
-        return escaped_out
+        return escape_script(out)
 
     @classmethod
     def handle(cls, parser, token):
@@ -146,3 +159,27 @@ class EscapeScriptNode(template.Node):
         return cls(nodelist)
 
 register.tag(EscapeScriptNode.TAG_NAME, EscapeScriptNode.handle)
+
+
+# Helpers for Widget.render_with_errors, our extension to the Django widget API that allows widgets to
+# take on the responsibility of rendering their own error messages
+@register.filter
+def render_with_errors(bound_field):
+    """
+    Usage: {{ field|render_with_errors }} as opposed to {{ field }}.
+    If the field (a BoundField instance) has errors on it, and the associated widget implements
+    a render_with_errors method, call that; otherwise, call the regular widget rendering mechanism.
+    """
+    widget = bound_field.field.widget
+    if bound_field.errors and hasattr(widget, 'render_with_errors'):
+        return widget.render_with_errors(bound_field.html_name, bound_field.value(), attrs={'id': bound_field.auto_id}, errors=bound_field.errors)
+    else:
+        return bound_field.as_widget()
+
+@register.filter
+def has_unrendered_errors(bound_field):
+    """
+    Return true if this field has errors that were not accounted for by render_with_errors, because
+    the widget does not support the render_with_errors method
+    """
+    return bound_field.errors and not hasattr(bound_field.field.widget, 'render_with_errors')

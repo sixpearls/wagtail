@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 from django.db import models
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager
@@ -12,7 +14,7 @@ from modelcluster.tags import ClusterTaggableManager
 
 from wagtail.wagtailcore.models import Page, Orderable
 from wagtail.wagtailcore.fields import RichTextField
-from wagtail.wagtailadmin.edit_handlers import FieldPanel, MultiFieldPanel, InlinePanel, PageChooserPanel
+from wagtail.wagtailadmin.edit_handlers import FieldPanel, MultiFieldPanel, InlinePanel, PageChooserPanel, TabbedInterface, ObjectList
 from wagtail.wagtailimages.edit_handlers import ImageChooserPanel
 from wagtail.wagtaildocs.edit_handlers import DocumentChooserPanel
 from wagtail.wagtailforms.models import AbstractEmailForm, AbstractFormField
@@ -20,6 +22,7 @@ from wagtail.wagtailsnippets.models import register_snippet
 from wagtail.wagtailsnippets.edit_handlers import SnippetChooserPanel
 from wagtail.wagtailsearch import index
 from wagtail.contrib.wagtailroutablepage.models import RoutablePage
+from wagtail.wagtailimages.models import AbstractImage, Image
 
 
 EVENT_AUDIENCE_CHOICES = (
@@ -247,10 +250,10 @@ EventPage.content_panels = [
     FieldPanel('audience'),
     FieldPanel('cost'),
     FieldPanel('signup_link'),
-    InlinePanel(EventPage, 'carousel_items', label="Carousel items"),
+    InlinePanel('carousel_items', label="Carousel items"),
     FieldPanel('body', classname="full"),
-    InlinePanel(EventPage, 'speakers', label="Speakers"),
-    InlinePanel(EventPage, 'related_links', label="Related links"),
+    InlinePanel('speakers', label="Speakers"),
+    InlinePanel('related_links', label="Related links"),
 ]
 
 EventPage.promote_panels = [
@@ -306,6 +309,15 @@ class EventIndex(Page):
         for path in super(EventIndex, self).get_static_site_paths():
             yield path
 
+    def get_sitemap_urls(self):
+        # Add past events url to sitemap
+        return super(EventIndex, self).get_sitemap_urls() + [
+            {
+                'location': self.full_url + 'past/',
+                'lastmod': self.latest_revision_created_at
+            }
+        ]
+
 EventIndex.content_panels = [
     FieldPanel('title', classname="full title"),
     FieldPanel('intro', classname="full"),
@@ -320,7 +332,7 @@ class FormPage(AbstractEmailForm):
 
 FormPage.content_panels = [
     FieldPanel('title', classname="full title"),
-    InlinePanel(FormPage, 'form_fields', label="Form fields"),
+    InlinePanel('form_fields', label="Form fields"),
     MultiFieldPanel([
         FieldPanel('to_address', classname="full"),
         FieldPanel('from_address', classname="full"),
@@ -381,15 +393,27 @@ class StandardIndex(Page):
     parent_page_types = []
 
 
+# A custom panel setup where all Promote fields are placed in the Content tab instead;
+# we use this to test that the 'promote' tab is left out of the output when empty
 StandardIndex.content_panels = [
     FieldPanel('title', classname="full title"),
-    InlinePanel(StandardIndex, 'advert_placements', label="Adverts"),
+    FieldPanel('seo_title'),
+    FieldPanel('slug'),
+    InlinePanel('advert_placements', label="Adverts"),
 ]
+StandardIndex.promote_panels = []
 
 
 class StandardChild(Page):
     pass
 
+# Test overriding edit_handler with a custom one
+StandardChild.edit_handler = TabbedInterface([
+    ObjectList(StandardChild.content_panels, heading='Content'),
+    ObjectList(StandardChild.promote_panels, heading='Promote'),
+    ObjectList(StandardChild.settings_panels, heading='Settings', classname='settings'),
+    ObjectList([], heading='Dinosaurs'),
+])
 
 class BusinessIndex(Page):
     """ Can be placed anywhere, can only have Business children """
@@ -486,10 +510,17 @@ class TaggedPageTag(TaggedItemBase):
 class TaggedPage(Page):
     tags = ClusterTaggableManager(through=TaggedPageTag, blank=True)
 
+TaggedPage.content_panels = [
+    FieldPanel('title', classname="full title"),
+    FieldPanel('tags'),
+]
+
 
 class PageChooserModel(models.Model):
     page = models.ForeignKey('wagtailcore.Page', help_text='help text')
 
+class EventPageChooserModel(models.Model):
+    page = models.ForeignKey('tests.EventPage', help_text='more help text')
 
 class SnippetChooserModel(models.Model):
     advert = models.ForeignKey(Advert, help_text='help text')
@@ -508,3 +539,17 @@ register_snippet(RegisterFunction)
 @register_snippet
 class RegisterDecorator(models.Model):
     pass
+
+
+class CustomImageWithoutAdminFormFields(AbstractImage):
+    caption = models.CharField(max_length=255)
+    not_editable_field = models.CharField(max_length=255)
+
+
+class CustomImageWithAdminFormFields(AbstractImage):
+    caption = models.CharField(max_length=255)
+    not_editable_field = models.CharField(max_length=255)
+
+    admin_form_fields = Image.admin_form_fields + (
+        'caption',
+    )

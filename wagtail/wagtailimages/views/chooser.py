@@ -1,5 +1,6 @@
 import json
 
+from django.core.urlresolvers import reverse
 from django.shortcuts import get_object_or_404, render
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.contrib.auth.decorators import permission_required
@@ -23,6 +24,7 @@ def get_image_json(image):
 
     return json.dumps({
         'id': image.id,
+        'edit_link': reverse('wagtailimages_edit_image', args=(image.id,)),
         'title': image.title,
         'preview': {
             'url': preview_image.url,
@@ -32,12 +34,11 @@ def get_image_json(image):
     })
 
 
-@permission_required('wagtailadmin.access_admin')
 def chooser(request):
     Image = get_image_model()
 
     if request.user.has_perm('wagtailimages.add_image'):
-        ImageForm = get_image_form()
+        ImageForm = get_image_form(Image)
         uploadform = ImageForm()
     else:
         uploadform = None
@@ -100,7 +101,6 @@ def chooser(request):
     })
 
 
-@permission_required('wagtailadmin.access_admin')
 def image_chosen(request, image_id):
     image = get_object_or_404(get_image_model(), id=image_id)
 
@@ -113,7 +113,7 @@ def image_chosen(request, image_id):
 @permission_required('wagtailimages.add_image')
 def chooser_upload(request):
     Image = get_image_model()
-    ImageForm = get_image_form()
+    ImageForm = get_image_form(Image)
 
     searchform = SearchForm()
 
@@ -151,7 +151,6 @@ def chooser_upload(request):
     )
 
 
-@permission_required('wagtailadmin.access_admin')
 def chooser_select_format(request, image_id):
     image = get_object_or_404(get_image_model(), id=image_id)
 
@@ -168,6 +167,7 @@ def chooser_select_format(request, image_id):
                 'format': format.name,
                 'alt': form.cleaned_data['alt_text'],
                 'class': format.classnames,
+                'edit_link': reverse('wagtailimages_edit_image', args=(image.id,)),
                 'preview': {
                     'url': preview_image.url,
                     'width': preview_image.width,
